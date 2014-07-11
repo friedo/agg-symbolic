@@ -1,4 +1,4 @@
-function get_sized_derive_pipeline(targetfield, degree) {
+function get_sized_derive_pipeline(targetfield, outfield, degree) {
     //generate projection to fill in null coefficients with 0
     var nullproj = {$project: {_id: 1}};
     var newx = {};
@@ -13,13 +13,13 @@ function get_sized_derive_pipeline(targetfield, degree) {
     for(var i = 0; i < degree; i++) {
         xprime[i] = {$multiply: ["$" + targetfield + "." + (1 + i), (1 + i)]};
     }
-    deriveproj["$project"][targetfield] = xprime;
+    deriveproj["$project"][outfield] = xprime;
 
     //return pipeline
     return [nullproj, deriveproj];
 }
 
-function get_sized_integrate_pipeline(targetfield, degree) {
+function get_sized_integrate_pipeline(targetfield, outfield, degree) {
     //generate projection to fill in null coefficients with 0
     var nullproj = {$project: {_id: 1}};
     var newx = {};
@@ -38,15 +38,15 @@ function get_sized_integrate_pipeline(targetfield, degree) {
             xint[i] = {$divide: ["$" + targetfield + "." + (i - 1), i]};
         }
     }
-    integrateproj["$project"][targetfield] = xint;
+    integrateproj["$project"][outfield] = xint;
 
     //return pipeline
     return [nullproj, integrateproj];
 }
 
 //test usage
-var ipl = get_sized_integrate_pipeline("x", 5);
-var dpl = get_sized_derive_pipeline("x", 5);
+var ipl = get_sized_integrate_pipeline("x", "y", 5);
+var dpl = get_sized_derive_pipeline("x", "x", 5);
 //derive then integrate, should return to original doc
 for(k in ipl) {
     dpl.push(ipl[k]);
