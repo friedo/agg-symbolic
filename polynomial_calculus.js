@@ -1,32 +1,32 @@
-function get_sized_derive_pipeline(degree) {
+function get_sized_derive_pipeline(targetfield, degree) {
     //generate projection to fill in null coefficients with 0
     var nullproj = {$project: {_id: 1}};
     var newx = {};
     for(var i = 0; i <= degree; i++) {
-        newx[i] = {$ifNull: ["$x." + i, 0]};
+        newx[i] = {$ifNull: ["$" + targetfield + "." + i, 0]};
     }
-    nullproj["$project"]["x"] = newx;
+    nullproj["$project"][targetfield] = newx;
 
     //generate projection to do actual derivation
     var deriveproj = {$project: {_id: 1}};
     var xprime = {};
     for(var i = 0; i < degree; i++) {
-        xprime[i] = {$multiply: ["$x." + (1 + i), (1 + i)]};
+        xprime[i] = {$multiply: ["$" + targetfield + "." + (1 + i), (1 + i)]};
     }
-    deriveproj["$project"]["x"] = xprime;
+    deriveproj["$project"][targetfield] = xprime;
 
     //return pipeline
     return [nullproj, deriveproj];
 }
 
-function get_sized_integrate_pipeline(degree) {
+function get_sized_integrate_pipeline(targetfield, degree) {
     //generate projection to fill in null coefficients with 0
     var nullproj = {$project: {_id: 1}};
     var newx = {};
     for(var i = 0; i <= degree + 1; i++) {
-        newx[i] = {$ifNull: ["$x." + i, 0]};
+        newx[i] = {$ifNull: ["$" + targetfield + "." + i, 0]};
     }
-    nullproj["$project"]["x"] = newx;
+    nullproj["$project"][targetfield] = newx;
 
     //generate projection to do actual derivation
     var integrateproj = {$project: {_id: 1}};
@@ -35,18 +35,18 @@ function get_sized_integrate_pipeline(degree) {
         if(i === 0) {
             xint[i] = {$multiply: [1, 0]};//need to set it to 0 somehow lol
         } else {
-            xint[i] = {$divide: ["$x." + (i - 1), i]};
+            xint[i] = {$divide: ["$" + targetfield + "." + (i - 1), i]};
         }
     }
-    integrateproj["$project"]["x"] = xint;
+    integrateproj["$project"][targetfield] = xint;
 
     //return pipeline
     return [nullproj, integrateproj];
 }
 
 //test usage
-var ipl = get_sized_integrate_pipeline(5);
-var dpl = get_sized_derive_pipeline(5);
+var ipl = get_sized_integrate_pipeline("x", 5);
+var dpl = get_sized_derive_pipeline("x", 5);
 //derive then integrate, should return to original doc
 for(k in ipl) {
     dpl.push(ipl[k]);
